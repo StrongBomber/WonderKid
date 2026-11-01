@@ -1,6 +1,6 @@
 # Wonderkid
 
-Android için futbolcu kariyeri prototipi. Antrenman yapın, enerji ve kredinizi yönetin ve üç şutluk maçlara çıkın. İlerleme cihazda saklanır.
+Android için futbolcu kariyeri prototipi. Antrenman yapın, enerji ve kredinizi yönetin ve üç şutluk maçlara çıkın. Goller itibar kazandırır; belirli itibar eşiklerinde daha yüksek maaşlı kulüp sözleşmeleri açılır. Üç şutta üç gol ek ödül verir. İlerleme cihazda saklanır.
 
 ## Çalıştırma
 

@@ -24,6 +24,7 @@ public class MainActivity extends Activity {
         private final Random random = new Random();
         private final SharedPreferences save;
         private int week, energy, skill, money, goals, points, shots, matchGoals;
+        private int reputation, clubLevel, consecutiveGoals;
         private boolean inMatch;
         private String message = "Kariyerine başla!";
         private float downX, downY;
@@ -35,10 +36,12 @@ public class MainActivity extends Activity {
             week = save.getInt("week", 1); energy = save.getInt("energy", 100);
             skill = save.getInt("skill", 25); money = save.getInt("money", 100);
             goals = save.getInt("goals", 0); points = save.getInt("points", 0);
+            reputation = save.getInt("reputation", 0); clubLevel = save.getInt("clubLevel", 0);
         }
         private void persist() {
             save.edit().putInt("week", week).putInt("energy", energy).putInt("skill", skill)
-                .putInt("money", money).putInt("goals", goals).putInt("points", points).apply();
+                .putInt("money", money).putInt("goals", goals).putInt("points", points)
+                .putInt("reputation", reputation).putInt("clubLevel", clubLevel).apply();
         }
         private void rect(Canvas c, int color, float l, float t, float r, float b, float radius) {
             paint.setColor(color); c.drawRoundRect(l,t,r,b,radius,radius,paint);
@@ -62,15 +65,16 @@ public class MainActivity extends Activity {
             if (!inMatch) {
                 rect(c,0xff113732,18,82,342,202,20);
                 text(c,"HAFTA " + week,34,113,15,0xffcfff64,true);
-                text(c,"Genç yetenek",34,143,23,Color.WHITE,true);
+                text(c,clubName(),34,143,23,Color.WHITE,true);
                 text(c,String.format(Locale.ROOT,"Enerji %d   •   Yetenek %d",energy,skill),34,173,14,0xffd7e7df,false);
                 text(c,String.format(Locale.ROOT,"Bakiye %d   •   Gol %d   •   Puan %d",money,goals,points),22,232,13,Color.WHITE,false);
                 train.set(18,253,342,322); rest.set(18,333,342,402); match.set(18,413,342,482);
                 button(c,train,"ANTRENMAN","-20 enerji · +3 yetenek · 20 kredi",0xff24534a);
                 button(c,rest,"DİNLEN","+35 enerji · 10 kredi",0xff24534a);
                 button(c,match,"MAÇA ÇIK","3 şut · 30 enerji",0xff597d21);
-                text(c,message,22,515,14,0xffd9e5a8,false);
-                text(c,"İlerleme otomatik kaydedilir.",22,Math.max(545,h-25),12,0xff819e94,false);
+                text(c,"İtibar " + reputation + "  •  Maaş " + salary() + "/maç",22,508,13,0xffcfff64,true);
+                text(c,message,22,535,13,0xffd9e5a8,false);
+                text(c,"İlerleme otomatik kaydedilir.",22,Math.max(570,h-25),12,0xff819e94,false);
             } else {
                 text(c,"MAÇ GÜNÜ",22,100,19,Color.WHITE,true);
                 text(c,"Şut " + (shots+1) + "/3    Gol " + matchGoals,22,127,15,0xffcfff64,true);
@@ -85,6 +89,10 @@ public class MainActivity extends Activity {
             }
             c.restore();
         }
+        private String clubName() {
+            return clubLevel == 2 ? "Yıldızlar SK" : clubLevel == 1 ? "Kent Spor" : "Gençlik SK";
+        }
+        private int salary() { return 30 + clubLevel * 20; }
         @Override public boolean onTouchEvent(MotionEvent event) {
             float scale=getWidth()/360f, x=event.getX()/scale, y=event.getY()/scale;
             if (event.getAction()==MotionEvent.ACTION_DOWN) { downX=x; downY=y; return true; }
@@ -99,17 +107,21 @@ public class MainActivity extends Activity {
                     else { money-=10; energy=Math.min(100,energy+35); message="Enerjin yenilendi."; persist(); }
                 } else if (match.contains(x,y)) {
                     if (energy<30) message="Maç için en az 30 enerji gerekli.";
-                    else { energy-=30; shots=0; matchGoals=0; inMatch=true; message="İsabet için kaleye nişan al."; persist(); }
+                    else { energy-=30; shots=0; matchGoals=0; consecutiveGoals=0; inMatch=true; message="İsabet için kaleye nişan al."; persist(); }
                 }
             } else if (downY-y>40) {
                 boolean onTarget=x>=72 && x<=288 && y>=150 && y<=300;
                 boolean goal=onTarget && random.nextInt(100)<35+skill/2;
-                shots++; if(goal) matchGoals++;
+                shots++; if(goal) { matchGoals++; consecutiveGoals++; } else consecutiveGoals=0;
                 message=goal ? "GOOOL!" : "Kaçtı!";
                 if(shots==3) {
                     goals+=matchGoals; points+=matchGoals>=2?3:matchGoals==1?1:0;
-                    money+=30+matchGoals*20; week++; inMatch=false;
-                    message="Maç bitti: " + matchGoals + " gol attın."; persist();
+                    money+=salary()+matchGoals*20; reputation+=matchGoals*2;
+                    if (consecutiveGoals == 3) { reputation+=3; money+=30; }
+                    int previousLevel=clubLevel;
+                    if (reputation>=30) clubLevel=2; else if (reputation>=12) clubLevel=1;
+                    week++; inMatch=false;
+                    message=clubLevel>previousLevel ? "Yeni sözleşme: " + clubName() + "!" : "Maç bitti: " + matchGoals + " gol attın."; persist();
                 }
             }
             invalidate(); return true;
